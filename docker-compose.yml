@@ -1,0 +1,50 @@
+version: '3.9'
+
+services:
+
+  app:
+    build:
+      context: ./src
+      dockerfile: ../docker/app/Dockerfile
+      args:
+        XDEBUG_PORT: ${XDEBUG_PORT:-9001}
+    container_name: 'mpstats-app'
+    working_dir: /var/www/src
+    restart: always
+    depends_on:
+      - mysql
+    volumes:
+      - ./src:/var/www/src
+    environment:
+      DOCKER_UID: 1000
+      DOCKER_GID: 1000
+      XDEBUG_CONFIG: 'client_host=172.17.0.1 client_port=9001'
+      XDEBUG_MODE: 'debug'
+      PHP_IDE_CONFIG: 'serverName=mpstats.test' # domain name
+
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    container_name: 'mpstats-nginx'
+    working_dir: /var/www
+    restart: always
+    expose:
+      - 80
+      - 433
+    volumes:
+      - ./docker/nginx:/etc/nginx/conf.d
+    depends_on:
+      - app
+
+  mysql:
+    image: mysql:latest
+    container_name: 'mpstats-mysql'
+    restart: always
+    environment:
+      MYSQL_DATABASE: mpstats
+      MYSQL_ROOT_PASSWORD: 123
+    expose:
+      - 3306
+    volumes:
+      - ./docker/mysql:/var/lib/mysql

@@ -1,0 +1,19 @@
+version: '3.9'
+
+services:
+  app:
+    build:
+      args:
+        USER_UID: 1000 #(~ id -u)
+        USER_NAME: username #(~ whoami)
+
+  nginx:
+    environment:
+      WEB_DOMAIN: mpstats.test
+    ports:
+      - 80:80
+      - 443:443
+
+  mysql:
+    ports:
+      - 3306:3306
