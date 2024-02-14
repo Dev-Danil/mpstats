@@ -23,15 +23,12 @@ services:
       PHP_IDE_CONFIG: 'serverName=mpstats.test' # domain name
 
   nginx:
-    build:
-      context: ./docker/nginx
-      dockerfile: Dockerfile
+    image: nginx:1.21.4
     container_name: 'mpstats-nginx'
     working_dir: /var/www
     restart: always
     expose:
       - 80
-      - 433
     volumes:
       - ./docker/nginx:/etc/nginx/conf.d
     depends_on:
