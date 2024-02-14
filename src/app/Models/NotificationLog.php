@@ -21,11 +21,6 @@ class NotificationLog extends Model
 {
     use HasFactory;
 
-    final public const STATUS_PENDING = 'pending';
-    final public const STATUS_PROCESSED = 'processed';
-    final public const STATUS_ERROR = 'error';
-    final public const STATUS_CANCELED = 'canceled';
-
     final public const TYPE_SMS = 'sms';
     final public const TYPE_TELEGRAM = 'telegram';
 

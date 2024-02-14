@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\CreateNotificationController;
+use App\Http\Controllers\DeleteNotificationController;
 use App\Http\Controllers\ShowNotificationController;
+use App\Http\Controllers\UpdateNotificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -20,4 +23,11 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::get('/get_notification/{id}', [ShowNotificationController::class, 'getNotification'])
+    ->whereNumber('id');
+
+Route::post('/create_notification', [CreateNotificationController::class, 'createNotification']);
+
+Route::patch('/edit_notification', [UpdateNotificationController::class, 'updateNotification']);
+
+Route::delete('/remove_notification/{id}', [DeleteNotificationController::class, 'deleteNotification'])
     ->whereNumber('id');

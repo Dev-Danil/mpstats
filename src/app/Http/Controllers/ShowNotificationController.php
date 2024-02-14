@@ -4,17 +4,23 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\ApiNotFoundException;
+use App\Providers\Operations\NotificationLogsDataProvider;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Response;
 
-final class ShowNotificationController extends Controller
+class ShowNotificationController extends Controller
 {
     public function getNotification(
-        string $id
+        int $id,
+        NotificationLogsDataProvider $notificationLogsDataProvider
     ): JsonResponse {
-        dd($id);
-        //todo получение из БД по $id
+        $notificationLog = $notificationLogsDataProvider
+            ->getNotificationLogById($id);
 
-        return Response::apiSuccess();
+        if ($notificationLog === null) {
+            throw new ApiNotFoundException("Notification with this ID not found");
+        }
+
+        return new JsonResponse($notificationLog->toArray(), JsonResponse::HTTP_OK);
     }
 }
