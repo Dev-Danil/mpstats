@@ -21,18 +21,8 @@ class UpdateNotificationPatchRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'content' => 'required|string',
-            'id' => 'required|integer',
+            'content' => ['required', 'string'],
+            'id' => ['required', 'integer'],
         ];
-    }
-
-    public function getBodyContent(): string
-    {
-        return $this->input('content');
-    }
-
-    public function getBodyId(): int
-    {
-        return (int) $this->input('id');
     }
 }

@@ -21,9 +21,6 @@ class NotificationLog extends Model
 {
     use HasFactory;
 
-    final public const TYPE_SMS = 'sms';
-    final public const TYPE_TELEGRAM = 'telegram';
-
     protected $casts = [
         'processed_at' => 'datetime',
     ];

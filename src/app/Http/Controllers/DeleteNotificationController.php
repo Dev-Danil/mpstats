@@ -4,28 +4,33 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Exceptions\ApiNotFoundException;
+use App\Enums\Models\NotificationLogStatusEnum;
 use App\Exceptions\BadStatusNotificationException;
-use App\Exceptions\InternalServerErrorException;
 use App\Exceptions\NotificationNotFoundException;
-use App\Providers\Operations\NotificationLogsOperation;
-use Illuminate\Http\JsonResponse;
+use App\Providers\Operations\NotificationLogsRepository;
+use Illuminate\Http\Response;
 
 class DeleteNotificationController extends Controller
 {
     public function deleteNotification(
         int $id,
-        NotificationLogsOperation $notificationLogsOperation
-    ): JsonResponse {
-        try {
-            $notificationLogsOperation
-                ->deleteNotificationLogById($id);
-        } catch (NotificationNotFoundException|BadStatusNotificationException $exception) {
-            throw new ApiNotFoundException('Failed to delete notification');
-        } catch (\Throwable $exception) {
-            throw new InternalServerErrorException('Failed to delete notification');
+        NotificationLogsRepository $notificationLogsRepository,
+    ): Response {
+        $notification = $notificationLogsRepository->getNotificationLogById($id);
+
+        if ($notification === null) {
+            throw new NotificationNotFoundException('Notification with this ID not found');
         }
 
-        return new JsonResponse([], JsonResponse::HTTP_OK);
+        if ($notification->status === NotificationLogStatusEnum::STATUS_CANCELED->value) {
+            throw new BadStatusNotificationException('The notification has already been deleted');
+        }
+
+        $notificationLogsRepository->setStatusNotificationLog(
+            $notification,
+            NotificationLogStatusEnum::STATUS_CANCELED
+        );
+
+        return response()->noContent();
     }
 }
