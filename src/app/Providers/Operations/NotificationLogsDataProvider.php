@@ -25,7 +25,7 @@ class NotificationLogsDataProvider
 
         $notificationLog->content = $content;
         $notificationLog->type = $type;
-        $notificationLog->status = NotificationLogStatusEnum::STATUS_PENDING;
+        $notificationLog->status = NotificationLogStatusEnum::STATUS_PENDING->value;
         $notificationLog->processed_at = null;
         $notificationLog->created_at = $now;
         $notificationLog->updated_at = $now;
