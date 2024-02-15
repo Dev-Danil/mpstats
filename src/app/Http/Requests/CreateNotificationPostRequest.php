@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Enums\Models\NotificationLogTypeEnum;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * @summary Создание нотификации
@@ -21,18 +23,9 @@ class CreateNotificationPostRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'content' => 'required|string',
-            'type' => 'required|string',
+            'content' => ['required', 'string'],
+            'type' => ['required', Rule::enum(NotificationLogTypeEnum::class)
+            ],
         ];
-    }
-
-    public function getBodyContent(): string
-    {
-        return $this->input('content');
-    }
-
-    public function getBodyType(): string
-    {
-        return $this->input('type');
     }
 }

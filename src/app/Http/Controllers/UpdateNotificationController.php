@@ -4,32 +4,31 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Exceptions\ApiNotFoundException;
+use App\Enums\Models\NotificationLogStatusEnum;
 use App\Exceptions\BadStatusNotificationException;
-use App\Exceptions\InternalServerErrorException;
 use App\Exceptions\NotificationNotFoundException;
 use App\Http\Requests\UpdateNotificationPatchRequest;
-use App\Providers\Operations\NotificationLogsOperation;
-use Illuminate\Http\JsonResponse;
+use App\Providers\Operations\NotificationLogsRepository;
+use Illuminate\Http\Response;
 
 class UpdateNotificationController extends Controller
 {
     public function updateNotification(
         UpdateNotificationPatchRequest $request,
-        NotificationLogsOperation $notificationLogsOperation
-    ): JsonResponse {
-        try {
-            $notificationLogsOperation
-                ->updateNotificationLogById(
-                    $request->getBodyId(),
-                    $request->getBodyContent()
-                );
-        } catch (NotificationNotFoundException|BadStatusNotificationException $exception) {
-            throw new ApiNotFoundException('Failed to update notification');
-        } catch (\Throwable $exception) {
-            throw new InternalServerErrorException('Failed to create notification');
+        NotificationLogsRepository $notificationLogsRepository
+    ): Response {
+        $notification = $notificationLogsRepository->getNotificationLogById((int) $request->id);
+
+        if ($notification === null) {
+            throw new NotificationNotFoundException('Notification with this ID not found');
         }
 
-        return new JsonResponse([], JsonResponse::HTTP_OK);
+        if ($notification->status !== NotificationLogStatusEnum::STATUS_PENDING->value) {
+            throw new BadStatusNotificationException('You cannot change the message in this status');
+        }
+
+        $notificationLogsRepository->updateContentNotificationLog($notification, $request->content);
+
+        return response()->noContent();
     }
 }

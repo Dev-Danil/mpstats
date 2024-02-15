@@ -8,7 +8,7 @@ use App\Enums\Models\NotificationLogStatusEnum;
 use App\Models\NotificationLog;
 use Carbon\CarbonImmutable;
 
-class NotificationLogsDataProvider
+class NotificationLogsRepository
 {
     public function getNotificationLogById(int $id): ?NotificationLog
     {
@@ -33,5 +33,22 @@ class NotificationLogsDataProvider
         $notificationLog->save();
 
         return $notificationLog;
+    }
+
+    public function setStatusNotificationLog(NotificationLog $notification, NotificationLogStatusEnum $status): void
+    {
+        $now = CarbonImmutable::now();
+
+        $notification->status = $status->value;
+        $notification->processed_at = $now;
+        $notification->updated_at = $now;
+        $notification->save();
+    }
+
+    public function updateContentNotificationLog(NotificationLog $notification, string $content): void
+    {
+        $notification->content = $content;
+        $notification->updated_at = CarbonImmutable::now();
+        $notification->save();
     }
 }

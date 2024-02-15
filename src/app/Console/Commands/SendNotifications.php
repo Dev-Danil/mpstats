@@ -5,65 +5,58 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Enums\Models\NotificationLogStatusEnum;
+use App\Enums\Models\NotificationLogTypeEnum;
 use App\Models\NotificationLog;
-use App\Operations\Notifications\SmsNotificationIntegratorFactory;
-use App\Operations\Notifications\TelegramNotificationIntegratorFactory;
-use Carbon\CarbonImmutable;
+use App\Operations\Notifications\NotificationIntegratorFactory;
+use App\Providers\Operations\NotificationLogsRepository;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 
 class SendNotifications extends Command
 {
     protected $signature = 'app:send-notifications
-        {typeIntegrator : Тип интегратора}
+        {typeIntegrator? : Тип интегратора}
         {--chunk-size=100 : Размер чанка}';
 
-    protected $description = 'Отправка нотификаций по интеграторам';
+    protected $description = 'Отправка нотификаций по интеграторам.
+    Команда php artisan app:send-notifications разошлет сообщения по всем интеграторам.';
 
-    public function handle()
+    protected NotificationLogsRepository $notificationLogsRepository;
+
+    public function handle(NotificationLogsRepository $notificationLogsRepository): void
     {
+        $this->notificationLogsRepository = $notificationLogsRepository;
+
         $type = $this->argument('typeIntegrator');
         $chunkSize = (int) $this->option('chunk-size');
 
-        if ($type === null || !\in_array($type, [NotificationLog::TYPE_TELEGRAM, NotificationLog::TYPE_SMS])) {
-            $this->error('Не указан интегратор или указан не существующий');
-
-            return;
+        $types = [$type];
+        if ($type === null) {
+            $types = array_column(NotificationLogTypeEnum::cases(), 'value');
         }
 
-        switch ($type) {
-            case NotificationLog::TYPE_TELEGRAM:
-                $notificationFactory = new TelegramNotificationIntegratorFactory();
-                break;
-            case NotificationLog::TYPE_SMS:
-                $notificationFactory = new SmsNotificationIntegratorFactory();
-                break;
-        }
-
-        $query = NotificationLog::where('type', $type)
+        $query = NotificationLog::whereIn('type', $types)
             ->where('status', NotificationLogStatusEnum::STATUS_PENDING->value);
 
-        $query->chunkById($chunkSize, static function (Collection $chunk) use ($notificationFactory): void {
-            $now = CarbonImmutable::now();
-
+        $query->chunkById($chunkSize, function (Collection $chunk): void {
             $chunk->each(
-                static function (NotificationLog $notificationLog) use ($notificationFactory, $now): void {
+                function (NotificationLog $notificationLog): void {
                     try {
+                        $notificationFactory = new NotificationIntegratorFactory();
                         $result = $notificationFactory
-                            ->createNotificationIntegrator()
+                            ->getIntergator($notificationLog->type)
                             ->send($notificationLog->content);
 
-                        echo $result . ' | ';
+                        //Добавлен вывод в консоль для визуального понимания отправки sms или telegram сообщений.
+                        //При работе Command в кроне (Kernel) данный вывод не нужен.
+                        $this->info($result);
 
-                        $status = NotificationLogStatusEnum::STATUS_PROCESSED->value;
+                        $status = NotificationLogStatusEnum::STATUS_PROCESSED;
                     } catch (\Throwable) {
-                        $status = NotificationLogStatusEnum::STATUS_ERROR->value;
+                        $status = NotificationLogStatusEnum::STATUS_ERROR;
                     }
 
-                    $notificationLog->status = $status;
-                    $notificationLog->processed_at = $now;
-                    $notificationLog->updated_at = $now;
-                    $notificationLog->save();
+                    $this->notificationLogsRepository->setStatusNotificationLog($notificationLog, $status);
                 }
             );
         }, 'id');
